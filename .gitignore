@@ -1,0 +1,10 @@
+# Do not commit customer or sales data
+*.xlsx
+*.xls
+*.numbers
+*.tsv
+*.csv
+.env
+.env.*
+.DS_Store
+Thumbs.db
