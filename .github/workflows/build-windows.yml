@@ -8,6 +8,10 @@ on:
       - ".github/workflows/build-windows.yml"
   workflow_dispatch:
 
+concurrency:
+  group: carpets-windows-main-release
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -62,9 +66,9 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: windows-v2.2.0
+          tag_name: windows-v2.2.1
           target_commitish: ${{ github.sha }}
-          name: "Carpets Ameer — Windows Desktop v2.2.0"
+          name: "Carpets Ameer — Windows Desktop v2.2.1"
           body: |
             ## Windows application — download directly
 
