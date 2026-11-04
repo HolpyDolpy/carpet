@@ -120,7 +120,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   const HEADERS = ['التاريخ','اسم الزبون','وصف البيع (اختياري)','تكلفة البضاعة','سعر البيع النقدي','الربح','هامش الربح','طريقة الدفع','ملاحظات','رقم العملية','الطول (متر)','العرض (متر)','الكمية','المساحة م²','تكلفة المتر م²','سعر المتر م²','معرّف العملية'];
   const PAY_AR = { cash:'نقدي', card:'بطاقة', transfer:'تحويل بنكي', credit:'آجل', other:'أخرى' };
-  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+  const esc = s => String(s ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
   const money = n => Math.round((Number(n) || 0) * 100) / 100;
   const xtext = (ref, s, style=9) => `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${esc(s)}</t></is></c>`;
   const xnum = (ref, n, style=3) => `<c r="${ref}" s="${style}" t="n"><v>${Number.isFinite(Number(n)) ? Number(n) : 0}</v></c>`;
@@ -164,7 +164,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       xformula('E'+footerrow,sales.length?`SUM(E9:E${footerrow-1})`:'0',revenue,6)+
       xformula('F'+footerrow,`E${footerrow}-D${footerrow}`,profit,6)+
       xformula('G'+footerrow,`IFERROR(F${footerrow}/E${footerrow},0)`,margin,7)+'</row>';
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" rightToLeft="1" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="19"/><cols>${cols}</cols><sheetData>${top}${rowsForSales(sales)}${summary}</sheetData><mergeCells count="9"><mergeCell ref="A1:Q2"/><mergeCell ref="A4:D4"/><mergeCell ref="E4:H4"/><mergeCell ref="I4:L4"/><mergeCell ref="M4:Q4"/><mergeCell ref="A5:D5"/><mergeCell ref="E5:H5"/><mergeCell ref="I5:L5"/><mergeCell ref="M5:Q5"/></mergeCells><autoFilter ref="A8:P${Math.max(8,footerrow-1)}"/><sheetProtection sheet="0"/><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.3" footer="0.3"/></worksheet>`;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" rightToLeft="1" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="19"/><cols>${cols}</cols><sheetData>${top}${rowsForSales(sales)}${summary}</sheetData><autoFilter ref="A8:P${Math.max(8,footerrow-1)}"/><mergeCells count="9"><mergeCell ref="A1:Q2"/><mergeCell ref="A4:D4"/><mergeCell ref="E4:H4"/><mergeCell ref="I4:L4"/><mergeCell ref="M4:Q4"/><mergeCell ref="A5:D5"/><mergeCell ref="E5:H5"/><mergeCell ref="I5:L5"/><mergeCell ref="M5:Q5"/></mergeCells><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.3" footer="0.3"/></worksheet>`;
   }
   function createMonthlyXml(sales) {
     const months = new Map();
