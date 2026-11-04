@@ -1,0 +1,41 @@
+name: Build and test macOS desktop app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'mac-app/**'
+      - '.github/workflows/build-macos.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos-installer:
+    name: Compile, verify and package on macOS
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Confirm macOS build environment
+        run: |
+          sw_vers
+          xcrun --find swiftc
+          xcodebuild -version
+
+      - name: Build and verify universal native application
+        run: bash mac-app/build-macos.sh
+
+      - name: Upload installable Mac DMG and app ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Carpets_Ameer_Mac_Installer
+          path: |
+            dist/Carpets_Ameer_macOS_Universal.dmg
+            dist/Carpets_Ameer_macOS_Universal_App.zip
+          if-no-files-found: error
+          retention-days: 30
