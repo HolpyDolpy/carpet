@@ -58,7 +58,10 @@ $dlg.CheckFileExists = $true
 $dlg.DefaultExt = 'xlsx'
 $dlg.AddExtension = $true
 $dlg.InitialDirectory = [Environment]::GetFolderPath('MyDocuments')
-if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $dlg.FileName }
+if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    $pathEncoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($dlg.FileName))
+    Write-Output ('CARPETS_FILE_PATH_B64:' + $pathEncoded)
+} else { Write-Output 'CARPETS_FILE_DIALOG_CANCELLED' }
 `
 	encoded := base64.StdEncoding.EncodeToString(utf16LEBytes(script))
 	c := exec.Command("powershell.exe", "-NoProfile", "-STA", "-EncodedCommand", encoded)
@@ -67,7 +70,29 @@ if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Outpu
 	if err != nil {
 		return "", fmt.Errorf("Windows file picker failed: %v (%s)", err, strings.TrimSpace(string(out)))
 	}
-	return strings.TrimSpace(strings.ReplaceAll(string(out), "\r", "")), nil
+	return decodeFilePickerResult(string(out), mode)
+}
+
+// decodeFilePickerResult reads only the explicit path result, never incidental
+// PowerShell output. Base64 preserves Arabic characters and spaces in filenames.
+func decodeFilePickerResult(out, mode string) (string, error) {
+    const prefix = "CARPETS_FILE_PATH_B64:"
+    for _, line := range strings.Split(strings.ReplaceAll(out, "\\r", ""), "\\n") {
+        line = strings.TrimSpace(line)
+        if line == "CARPETS_FILE_DIALOG_CANCELLED" { return "", nil }
+        if strings.HasPrefix(line, prefix) {
+            b, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(line,prefix))
+            if err != nil { return "", fmt.Errorf("Windows file picker returned invalid path data: %w", err) }
+            path := strings.TrimSpace(string(b))
+            if path == "" { return "", fmt.Errorf("Windows file picker returned an empty path") }
+            // The Save dialog should add this extension, but some Windows
+            // configurations omit it despite DefaultExt and AddExtension.
+            if mode == "save" && filepath.Ext(path) == "" { path += ".xlsx" }
+            return path, nil
+        }
+    }
+    return "", fmt.Errorf("Windows file picker did not return a usable path. Close the file dialog and try again")
+
 }
 func utf16LEBytes(s string) []byte {
 	u := utf16.Encode([]rune(s))
