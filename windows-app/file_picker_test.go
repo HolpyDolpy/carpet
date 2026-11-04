@@ -11,7 +11,7 @@ import (
 
 func TestDecodeFilePickerResult(t *testing.T) {
  cases:=[]struct{name, mode, output, wanted string; hasError bool}{
-    {"Arabic workbook","open", "notice\\r\\nCARPETS_FILE_PATH_B64:"+base64.StdEncoding.EncodeToString([]byte("C:\\\\مبيعات\\\\سجاد نوفمبر.xlsx")),"C:\\\\مبيعات\\\\سجاد نوفمبر.xlsx",false},
+    {"Arabic workbook","open", "notice\r\nCARPETS_FILE_PATH_B64:"+base64.StdEncoding.EncodeToString([]byte("C:\\\\مبيعات\\\\سجاد نوفمبر.xlsx")),"C:\\\\مبيعات\\\\سجاد نوفمبر.xlsx",false},
     {"Extension added","save","CARPETS_FILE_PATH_B64:"+base64.StdEncoding.EncodeToString([]byte("C:\\\\Users\\\\Test\\\\Documents\\\\Sales")),"C:\\\\Users\\\\Test\\\\Documents\\\\Sales.xlsx",false},
     {"Cancelled","save","CARPETS_FILE_DIALOG_CANCELLED","",false},
     {"Unexpected output","save","Windows Forms failed","",true},

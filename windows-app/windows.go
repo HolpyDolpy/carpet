@@ -77,7 +77,7 @@ if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
 // PowerShell output. Base64 preserves Arabic characters and spaces in filenames.
 func decodeFilePickerResult(out, mode string) (string, error) {
     const prefix = "CARPETS_FILE_PATH_B64:"
-    for _, line := range strings.Split(strings.ReplaceAll(out, "\\r", ""), "\\n") {
+    for _, line := range strings.Split(strings.ReplaceAll(out, "\r", ""), "\n") {
         line = strings.TrimSpace(line)
         if line == "CARPETS_FILE_DIALOG_CANCELLED" { return "", nil }
         if strings.HasPrefix(line, prefix) {
