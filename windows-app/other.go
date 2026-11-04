@@ -19,3 +19,7 @@ func nativeFileDialog(mode string) (string, error) {
 	return "", fmt.Errorf("Native file picker is only available in the Windows build")
 }
 func replaceFileAtomic(tmp, target string) error { return os.Rename(tmp, target) }
+
+func runDesktop(url, dataFolder string, onExit func()) error {
+    return openBrowser(url)
+}

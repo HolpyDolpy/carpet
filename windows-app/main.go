@@ -76,9 +76,9 @@ func main() {
 		fmt.Println("CARPETS_APP_URL=" + url)
 	} else {
 		go func() {
-			time.Sleep(350 * time.Millisecond)
-			if e := openBrowser(url); e != nil {
-				showError("Open Carpets Ameer", url+"\n"+e.Error())
+			time.Sleep(150 * time.Millisecond)
+			if e := runDesktop(url, a.folder, func() { _ = a.server.Close() }); e != nil {
+				showError("Carpets Ameer desktop window", e.Error())
 			}
 		}()
 	}

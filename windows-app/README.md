@@ -2,7 +2,7 @@
 
 A bilingual Arabic / English offline carpet-sales program for Windows 10/11 (64-bit).
 
-**Start:** Double-click `Carpets_Ameer_Windows_SafeSave.exe`. The app runs as a Windows executable and opens its interface in your default browser. **No Java, installation, cloud account, or internet is required.** Keep the executable running while editing sales; the page talks only to a local service on your own PC.
+**Start:** Double-click `Carpets_Ameer_Windows_SafeSave.exe`. The app opens in its own Windows desktop window using WebView2, not in your default browser. **No Java, cloud account, or internet is needed to use it.** Microsoft Edge WebView2 Runtime is required, and is installed on most updated Windows 10/11 PCs. Keep the executable running while editing sales; the page talks only to a local service on your own PC.
 
 ## Features
 
@@ -50,3 +50,20 @@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags='-s -w -H wi
 ```
 
 The executable is currently **unsigned**. Windows SmartScreen might show a warning on first launch. We have tested saving via automated Go and local API tests; this build has **not** been tested on a physical Windows PC.
+
+## Desktop window v2.0.0
+
+This version opens a resizable Windows application window, not an Edge/Chrome tab. The EXE includes a branded burgundy-and-gold rolled-carpet icon. The existing Excel storage code remains unchanged: you still select a workbook once, save into that same workbook after verification, and keep automatic backups and local drafts.
+
+### Build from source
+
+```powershell
+python -m pip install pillow==11.3.0
+python tools/generate_icon.py
+go mod tidy
+go test ./...
+go run github.com/akavel/rsrc@v0.10.2 -ico assets/CarpetsAmeer.ico -o rsrc_windows_amd64.syso
+go build -trimpath -ldflags="-s -w -H windowsgui" -o Carpets_Ameer_Windows_SafeSave.exe .
+```
+
+The generated icon source is at `tools/generate_icon.py`. Download the compiled EXE from [GitHub Releases](https://github.com/HolpyDolpy/carpet/releases/latest). Code-signing/notarization have not been performed, so Windows SmartScreen may display a warning. WebView2 must be installed on the PC.

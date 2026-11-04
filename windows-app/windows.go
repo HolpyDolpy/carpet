@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
+
+	webview2 "github.com/jchv/go-webview2"
 	"strings"
 	"syscall"
 	"unicode/utf16"
@@ -86,3 +90,35 @@ func replaceFileAtomic(tmp, target string) error {
 	return nil
 }
 func applicationUserConfigDir() string { a, _ := os.UserConfigDir(); return a }
+
+ // runDesktop hosts the sales editor inside a native, resizable Windows WebView2
+ // window instead of opening a browser tab. Local Excel API is unchanged.
+ func runDesktop(url, dataFolder string, onExit func()) (err error) {
+     runtime.LockOSThread()
+     defer runtime.UnlockOSThread()
+     defer onExit()
+     defer func() {
+         if recovered := recover(); recovered != nil {
+             err = fmt.Errorf("Could not create Windows app window: %v. Install Microsoft Edge WebView2 Runtime if needed.", recovered)
+         }
+     }()
+     window := webview2.NewWithOptions(webview2.WebViewOptions{
+         Debug: false,
+         AutoFocus: true,
+         DataPath: filepath.Join(dataFolder, "WebView2Data"),
+         WindowOptions: webview2.WindowOptions{
+             Title: "Carpets Ameer | منار العتبة — المبيعات",
+             Width: 1320,
+             Height: 850,
+             IconId: 1,
+             Center: true,
+         },
+     })
+     if window == nil {
+         return fmt.Errorf("Cannot initialize the desktop window. Install or repair Microsoft Edge WebView2 Runtime and reopen Carpets Ameer")
+     }
+     defer window.Destroy()
+     window.Navigate(url)
+     window.Run()
+     return nil
+ }

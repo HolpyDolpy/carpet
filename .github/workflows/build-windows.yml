@@ -19,44 +19,66 @@ jobs:
         working-directory: windows-app
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-go@v5
         with:
           go-version-file: windows-app/go.mod
           cache: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Test Windows application
+      - name: Create the branded carpet icon
+        run: |
+          python -m pip install pillow==11.3.0
+          python tools/generate_icon.py
+
+      - name: Download WebView2 desktop dependency
+        run: go mod tidy
+
+      - name: Test sales files, backup and recovery
         run: go test ./...
 
-      - name: Build Windows 64-bit EXE
+      - name: Embed icon in Windows executable
+        run: go run github.com/akavel/rsrc@v0.10.2 -ico assets/CarpetsAmeer.ico -o rsrc_windows_amd64.syso
+
+      - name: Build native-window Windows 64-bit EXE
         run: go build -trimpath -ldflags="-s -w -H windowsgui" -o Carpets_Ameer_Windows_SafeSave.exe .
 
-      - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+      - name: Verify the compiled EXE
+        shell: pwsh
+        run: |
+          $exe = 'Carpets_Ameer_Windows_SafeSave.exe'
+          if (!(Test-Path $exe)) { throw 'Executable missing' }
+          if ((Get-Item $exe).Length -lt 1000000) { throw 'Unexpectedly small EXE' }
+          Write-Host "Windows EXE: $((Get-Item $exe).Length) bytes"
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: Carpets_Ameer_Windows_SafeSave
+          name: Carpets_Ameer_Windows_Desktop_v2
           path: windows-app/Carpets_Ameer_Windows_SafeSave.exe
           if-no-files-found: error
 
-      - name: Publish direct-download EXE on GitHub Releases
+      - name: Publish direct-download EXE to GitHub Releases
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: windows-v1.0.0
+          tag_name: windows-v2.0.0
           target_commitish: ${{ github.sha }}
-          name: "Carpets Ameer - Windows v1.0.0"
+          name: "Carpets Ameer — Windows Desktop v2.0.0"
           body: |
-            ## Download the Windows application
+            ## Windows application — download directly
 
-            Click **Carpets_Ameer_Windows_SafeSave.exe** below under **Assets** to download the Windows app directly.
-            You do not need to download Source code or install Go.
+            Click **Carpets_Ameer_Windows_SafeSave.exe** under **Assets** below, not Source code.
 
-            - Windows 10 / 11 (64-bit)
-            - Arabic and English
-            - Save to a chosen Excel workbook, keep local drafts, and create backups
-            - No Java required; launch the executable on your own PC
+            This release opens in its own resizable Windows desktop window with a burgundy-and-gold carpet icon. It does not open a browser tab.
 
-            Note: This executable is not digitally signed with a commercial code-signing certificate. Windows may display a SmartScreen warning. Verify you downloaded it from this repository.
+            - Windows 10/11 (64-bit)
+            - Bilingual Arabic / English sales ledger
+            - Linked Excel workbook, verified updates and local backups
+            - Microsoft Edge WebView2 Runtime required (included on most updated Windows PCs)
+            - No Java or Microsoft Store installation needed
+
+            This app is not commercially code-signed, so Microsoft Defender SmartScreen may warn on first use. Download only from this repository and keep Defender enabled.
           files: windows-app/Carpets_Ameer_Windows_SafeSave.exe
           fail_on_unmatched_files: true
           draft: false
