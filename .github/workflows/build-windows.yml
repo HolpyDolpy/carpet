@@ -1,4 +1,4 @@
-name: Build Windows Safe Save
+name: Build and publish Windows EXE
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -19,16 +19,45 @@ jobs:
         working-directory: windows-app
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version-file: windows-app/go.mod
           cache: false
-      - name: Check Go package
+
+      - name: Test Windows application
         run: go test ./...
-      - name: Build Windows 64-bit application
+
+      - name: Build Windows 64-bit EXE
         run: go build -trimpath -ldflags="-s -w -H windowsgui" -o Carpets_Ameer_Windows_SafeSave.exe .
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
         with:
           name: Carpets_Ameer_Windows_SafeSave
           path: windows-app/Carpets_Ameer_Windows_SafeSave.exe
           if-no-files-found: error
+
+      - name: Publish direct-download EXE on GitHub Releases
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows-v1.0.0
+          target_commitish: ${{ github.sha }}
+          name: "Carpets Ameer - Windows v1.0.0"
+          body: |
+            ## Download the Windows application
+
+            Click **Carpets_Ameer_Windows_SafeSave.exe** below under **Assets** to download the Windows app directly.
+            You do not need to download Source code or install Go.
+
+            - Windows 10 / 11 (64-bit)
+            - Arabic and English
+            - Save to a chosen Excel workbook, keep local drafts, and create backups
+            - No Java required; launch the executable on your own PC
+
+            Note: This executable is not digitally signed with a commercial code-signing certificate. Windows may display a SmartScreen warning. Verify you downloaded it from this repository.
+          files: windows-app/Carpets_Ameer_Windows_SafeSave.exe
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: false
