@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -157,6 +158,46 @@ func validateWorkbook(data []byte) error {
 	}
 	return nil
 }
+// validateExportedWorkbook checks the Excel XML before a save is confirmed.
+// Legacy workbooks remain importable by the less strict ZIP-integrity checker.
+func validateExportedWorkbook(data []byte) error {
+	if err := validateWorkbook(data); err != nil { return err }
+	z, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil { return err }
+	seen := map[string]bool{}
+	for _, file := range z.File {
+		if file.Name != "xl/worksheets/sheet1.xml" && file.Name != "xl/worksheets/sheet2.xml" { continue }
+		r, err := file.Open()
+		if err != nil { return err }
+		source, err := io.ReadAll(io.LimitReader(r, 32<<20))
+		r.Close()
+		if err != nil { return err }
+		decoder := xml.NewDecoder(bytes.NewReader(source))
+		for {
+			_, err = decoder.Token()
+			if err == io.EOF { break }
+			if err != nil { return fmt.Errorf("Invalid Excel worksheet XML (%s): %w", file.Name, err) }
+		}
+		if !bytes.Contains(source, []byte("<sheetData>")) { return fmt.Errorf("Excel worksheet has no data: %s", file.Name) }
+		if file.Name == "xl/worksheets/sheet1.xml" {
+			filters := bytes.Index(source, []byte("<autoFilter"))
+			merges := bytes.Index(source, []byte("<mergeCells"))
+			protection := bytes.Index(source, []byte("<sheetProtection"))
+			if filters < 0 || merges < 0 || filters > merges || (protection >= 0 && protection > filters) {
+				return fmt.Errorf("Excel sales worksheet XML elements are out of order")
+			}
+			if !bytes.Contains(source, []byte("r=\"E8\"")) {
+				return fmt.Errorf("Excel sales worksheet is missing its detailed columns")
+			}
+		}
+		seen[file.Name] = true
+	}
+	if !seen["xl/worksheets/sheet1.xml"] || !seen["xl/worksheets/sheet2.xml"] {
+		return fmt.Errorf("Excel export requires Sales and Monthly Summary worksheets")
+	}
+	return nil
+}
+
 func (a *app) bootstrap(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("X-Carpets-Token") != a.token {
 		http.Error(w, "Forbidden", http.StatusForbidden)
@@ -350,7 +391,7 @@ func (a *app) saveWorkbook(w http.ResponseWriter, r *http.Request) {
 		fail(w, 413, err)
 		return
 	}
-	if err = validateWorkbook(data); err != nil {
+	if err = validateExportedWorkbook(data); err != nil {
 		fail(w, 400, err)
 		return
 	}
