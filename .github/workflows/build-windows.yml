@@ -1,0 +1,34 @@
+name: Build Windows Safe Save
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "windows-app/**"
+      - ".github/workflows/build-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: windows-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: windows-app/go.mod
+          cache: false
+      - name: Check Go package
+        run: go test ./...
+      - name: Build Windows 64-bit application
+        run: go build -trimpath -ldflags="-s -w -H windowsgui" -o Carpets_Ameer_Windows_SafeSave.exe .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Carpets_Ameer_Windows_SafeSave
+          path: windows-app/Carpets_Ameer_Windows_SafeSave.exe
+          if-no-files-found: error

@@ -26,3 +26,12 @@ This repository contains application source code only. Do not commit customer da
 ## License
 
 Personal project; all rights reserved.
+
+
+## Windows desktop app
+
+The separate [Windows Safe Save application](windows-app/) lets you choose an Excel workbook once and update that same file, with local drafts and timestamped verified backups. It includes an Arabic/English interface. The app is offline-first and runs as a Windows executable that opens a local browser window; it does not send customer data to GitHub.
+
+To get the executable, open **Actions → Build Windows Safe Save** and download the build artifact. Or build from source with Go 1.23 from the `windows-app` folder.
+
+**Privacy:** This public source code repository must not contain live sales workbooks, customer records, or backup files. Data remains on the user's PC.
