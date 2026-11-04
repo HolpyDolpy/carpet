@@ -60,6 +60,7 @@ codesign --verify --deep --strict --verbose=2 "$APP"
 xcrun lipo -info "$APP/Contents/MacOS/CarpetsAmeer"
 file "$APP/Contents/MacOS/CarpetsAmeer"
 "$APP/Contents/MacOS/CarpetsAmeer" --self-test
+"$APP/Contents/MacOS/CarpetsAmeer" --ui-self-test
 
 ln -s /Applications "$STAGING/Applications"
 ditto "$APP" "$STAGING/Carpets Ameer.app"
