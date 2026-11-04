@@ -4,6 +4,7 @@ import WebKit
 
 final class CarpetsAmeerApp: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate {
     private var window: NSWindow!
+    private let uiSmokeTest = CommandLine.arguments.contains("--ui-self-test")
     private var browser: WKWebView!
     private let workbookPathKey = "CarpetsAmeerWorkbookPath"
 
@@ -43,7 +44,6 @@ final class CarpetsAmeerApp: NSObject, NSApplicationDelegate, WKScriptMessageHan
 
         browser = WKWebView(frame: .zero, configuration: configuration)
         browser.navigationDelegate = self
-        browser.setValue(false, forKey: "drawsBackground")
 
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1260, height: 810),
                           styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -61,6 +61,12 @@ final class CarpetsAmeerApp: NSObject, NSApplicationDelegate, WKScriptMessageHan
             return
         }
         browser.loadFileURL(fileURL, allowingReadAccessTo: resourceURL)
+        if uiSmokeTest {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
+                fputs("FAIL: macOS window failed to load in time\n", stderr)
+                exit(3)
+            }
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -103,6 +109,19 @@ final class CarpetsAmeerApp: NSObject, NSApplicationDelegate, WKScriptMessageHan
             } catch {
                 self?.showError("Could not save Excel workbook: " + error.localizedDescription)
             }
+        }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard uiSmokeTest else { return }
+        let check = "Boolean(window.CarpetsExcel && document.getElementById('saleForm') && document.getElementById('saveBtn') && localStorage.setItem('__carpets_test','1') === undefined && localStorage.getItem('__carpets_test') === '1')"
+        webView.evaluateJavaScript(check) { result, error in
+            if error != nil || !(result as? Bool ?? false) {
+                fputs("FAIL: native WebKit content or persistent storage test failed: \\(String(describing: error))\\n", stderr)
+                exit(4)
+            }
+            print("PASS: macOS GUI WebKit loaded bilingual sales form and working localStorage")
+            exit(0)
         }
     }
 
